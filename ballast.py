@@ -1,6 +1,12 @@
-# ballast - A DigitalOcean Droplet Manager
-# version 0.1.0
-# author: Matt Bromiley (@mbromileyDFIR)
+#!/usr/bin/env python
+'''ballast.py: A DigitalOcean Droplet Manager '''
+
+__author__      =       "Matt Bromiley (@mbromileyDFIR)"
+__license__     =       "Apache License v2.0"
+__version__     =       "0.1.0"
+__maintainer__  =       "Matt Bromiley (@mbromileyDFIR)"
+__email__       =       "505forensics@gmail.com"
+__status__      =       "Development"
 
 from cmd import Cmd
 import os, getpass, json

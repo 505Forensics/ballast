@@ -27,6 +27,7 @@ def populate(api_key):
     droplets = manager.get_all_droplets()
     for idx, droplet in enumerate(droplets):
         d[idx] = {'Name':droplet.name,
+                  'ID':droplet.id,
                   'Memory (MB)':droplet.memory,
                   'Disk (GB)':droplet.disk,
                   'IP Address':droplet.ip_address,
@@ -52,25 +53,30 @@ def store_key():
 
 class Ballast(Cmd):
     def do_list(self, line):
+        'List the number of DigitalOcean droplets you have for this API key'
         print "You currently have {0} Droplets:".format(len(d))
         for i in d:
             print "{0} - {1}".format(i, d[i]['Name'])
         print "\nUse info <#> to get more info on a particular droplet"
 
     def do_info(self, idx):
+        'Get info on a particular DigitalOcean droplet. Usage: info <#>'
         if idx:
             e = d[(int(idx))]
             print json.dumps(e, indent=4,sort_keys=True)
         else:
-            print "No ID provided"
+            print "No ID provided. Usage: info <#>"
 
     def do_quit(self, line):
+        'Quit ballast'
         return True
 
     def do_exit(self, line):
+        'Exit ballast'
         return True
 
     def do_refresh(self, line):
+        'Refresh the list of DigitalOcean droplets'
         populate(api_key)
 
 if __name__ == "__main__":

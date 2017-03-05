@@ -3,7 +3,7 @@
 
 __author__      =       "Matt Bromiley (@mbromileyDFIR)"
 __license__     =       "Apache License v2.0"
-__version__     =       "0.1.0"
+__version__     =       "0.1.0-dev"
 __maintainer__  =       "Matt Bromiley (@mbromileyDFIR)"
 __email__       =       "505forensics@gmail.com"
 __status__      =       "Development"
@@ -27,8 +27,10 @@ except ImportError:
 
 encrypted_file = '.ballast_api'
 d = {}
+d_raw = {}
 
 def populate(api_key):
+    print "Populating droplets..."
     manager = digitalocean.Manager(token=api_key)
     droplets = manager.get_all_droplets()
     for idx, droplet in enumerate(droplets):
@@ -41,11 +43,14 @@ def populate(api_key):
                   'Status':droplet.status,
                   'Image':droplet.image['distribution'] + ' ' + droplet.image['name']
                   }
+        d_raw[idx] = droplet
+
 def retrieve_key():
     file = open(encrypted_file,'r')
     ciphertext = file.read()
     print "I found an encrypted API key. Please enter your passphrase to decrypt:"
     passphrase = getpass.getpass()
+    print "Attempting to decrypt your API key. Please wait..."
     decrypted_key = decrypt(passphrase, ciphertext)
     return decrypted_key
 
@@ -67,23 +72,55 @@ class Ballast(Cmd):
 
     def do_info(self, idx):
         'Get info on a particular DigitalOcean droplet. Usage: info <#>'
-        if idx:
-            e = d[(int(idx))]
-            print json.dumps(e, indent=4,sort_keys=True)
-        else:
-            print "No ID provided. Usage: info <#>"
+        try:
+            if idx:
+                e = d[(int(idx))]
+                print json.dumps(e, indent=4,sort_keys=True)
+            else:
+                print "No ID provided. Usage: info <#>"
+        except KeyError:
+            print "You have entered an invalid droplet ID. Please try again."
 
     def do_quit(self, line):
         'Quit ballast'
         return True
 
     def do_exit(self, line):
-        'Exit ballast'
+        'Quit ballast'
         return True
 
     def do_refresh(self, line):
         'Refresh the list of DigitalOcean droplets'
         populate(api_key)
+
+    def do_shutdown(self, idx):
+        'Shutdown a DigitalOcean droplet. Usage: shutdown <#>'
+        try:
+            if idx:
+                e = d_raw[int(idx)].shutdown()
+                if e['action']['type'] == "shutdown":
+                    print "{} shutdown successfully.".format(d[int(idx)]['Name'])
+                populate(api_key)
+            else:
+                print "No ID provided. Usage: shutdown <#>"
+        except KeyError:
+            print "You have entered an invalid droplet ID. Please try again."
+
+    def do_poweron(self, idx):
+        'Power on a DigitalOcean droplet. Usage: poweron <#>'
+        try:
+            if idx:
+                e=d_raw[int(idx)].power_on()
+                populate(api_key)
+            else:
+                print "No ID provided. Usage: poweron <#>"
+        except KeyError:
+            print "You have entered an invalid droplet ID. Please try again."
+
+    def do_rename(self, line):
+        'Rename a droplet. Usage: rename <#> <new name>'
+        rename_input = line.split()
+        d_raw[int(rename_input[0])].rename(rename_input[1])
 
 if __name__ == "__main__":
     os.system('clear')
@@ -92,10 +129,10 @@ if __name__ == "__main__":
         api_key = retrieve_key()
     else:
         store_choice = raw_input("I was unable to find an encrypted API key. Would you like to store one? (Y/N): ")
-        if store_choice == 'Y':
+        if store_choice.upper() == 'Y':
             api_key = store_key()
         else:
-            api_key = raw_input('Please enter your API key: ')
+            api_key = raw_input('Please enter your API key (this will not be written to disk): ')
 
     #The populate function fills the TinyDB instance with information gathered from DigitalOcean. Note that this is done each time the script is run.
     populate(api_key)
